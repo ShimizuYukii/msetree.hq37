@@ -111,8 +111,7 @@ static void fillin_node(int inode)
 	if(inode >= exists + offset) yval[inode] = nl;
 	sum = 0.0;
 	for (j = 0; j < nobs; j++)
-	    if (!oneside && where[j] == inode) sum += w[j] * log(yprob[nc * inode + (int) y[j] - 1]);
-	    if (oneside && where[j] == 1) sum += w[j] * log(yprob[nc * inode + (int) y[j] - 1]);
+	    if (where[j] == inode) sum += w[j] * log(yprob[nc * inode + (int) y[j] - 1]);
 	dev[inode] = -2 * sum;
     }
     else {
@@ -128,8 +127,7 @@ static void fillin_node(int inode)
 	yval[inode] = t;
 	sum = 0.0;
 	for (j = 0; j < nobs; j++)
-	  if (!oneside && where[j] == inode) sum +=  w[j] * (y[j] - t) * (y[j] - t);
-	  if (oneside && where[j] == 1) sum +=  w[j] * (y[j] - t) * (y[j] - t);
+	  if ( where[j] == inode) sum +=  w[j] * (y[j] - t) * (y[j] - t);
 	dev[inode] = sum;
     }
 }
@@ -233,12 +231,15 @@ static void split_cont(int inode, int iv, double *bval)
 	js++;
     if (js >= hi) {Printf("\n"); return;}
     split = 0.5 * (tmp + tvar[js + 1]);
+    if (oneside) y2=0;
     for (j = 0; j < ns; j++)
 	if (tvar[j] < split) {
 	    cntl += w1[j];
 	    if (!nc) ysum += w1[j]*tyc[j];
 	    else tab[ty[j]] += w1[j];
+	    if (oneside) y2 += w1[j]*tyc[j]*tyc[j];
 	} else  if (nc) tab[ty[j] + nc] += w1[j];
+
     if (nc) {
 	if (Gini) {
 	    ysum = 0.0;
@@ -262,9 +263,12 @@ static void split_cont(int inode, int iv, double *bval)
 	ldev *= 2;
     } else {
 	ldev = y2 - ysum*ysum/cntl - (ytot-ysum)*(ytot-ysum)/(totw-cntl);
+  if(oneside) ldev = y2 - ysum*ysum/cntl;
+  if (ifvar[iv] == 0) ldev += lambda;
     }
 
 /*   Printf("split %g dev %g counts %g %g\n", split, ldev, cntl, totw-cntl);*/
+
     bdev = ldev;
     bsplit = split;
     while (js < hi - 1) {
@@ -275,14 +279,20 @@ static void split_cont(int inode, int iv, double *bval)
 	if (nc) {
 	    tab[ty[js]] += w1[js];
 	    tab[ty[js] + nc] -= w1[js];
-	} else ysum += w1[js]*tyc[js];
+	} else {
+	  ysum += w1[js]*tyc[js];
+	  if (oneside) y2 += w1[j]*tyc[j]*tyc[j];
+	}
 	while (tvar[js + 1] == tmp) {
 	    js++;
 	    cntl += w[js];
 	    if (nc) {
 		tab[ty[js]] += w1[js];
 		tab[ty[js] + nc] -= w1[js];
-	    } else ysum += w1[js]*tyc[js];
+	    } else {
+	      ysum += w1[js]*tyc[js];
+	      if (oneside) y2 += w1[j]*tyc[j]*tyc[j];
+	    }
 	}
 	if (js >= hi) break;
 	split = 0.5 * (tmp + tvar[js + 1]);
@@ -308,9 +318,11 @@ static void split_cont(int inode, int iv, double *bval)
 	    ldev *= 2;
 	} else {
 	    ldev = y2 - ysum*ysum/cntl - (ytot-ysum)*(ytot-ysum)/(totw-cntl);
+	    if (oneside) ldev = y2 - ysum*ysum/cntl;
+	    if (ifvar[iv] == 0) ldev += lambda;
 	}
 /*  Printf("split %g dev %g counts %g %g\n", split, ldev, cntl, totw-cntl);*/
-  if (ifvar[iv] == 0) ldev += lambda;
+
 	if (ldev < bdev) {
 	    bdev = ldev;
 	    bsplit = split;
@@ -388,6 +400,7 @@ static void split_disc(int inode, int iv, double *bval)
 		ys[l] += w[j] * y[j];
 		y2 += w[j] * y[j] * y[j];
 		ytot += w[j] * y[j];
+		if(oneside && l!=1)  y2 -= w[j] * y[j] * y[j];
 	    }
 	}
     }
@@ -421,11 +434,21 @@ static void split_disc(int inode, int iv, double *bval)
 		}
 	    } else {
 		ldev += ys[l]*ys[l]/cnt[l];
+	  if(oneside) ldev = ys[0]*ys[0]/cnt[0];
 	    }
 	}
 	if (!nc) ldev = y2 - ldev;
 	else ldev *= 2;
+	if (oneside){
+	  for (j = 0; j < nobs; j++){
+	    if (twhere[j]!=0){
+	      tmp = y[j] - yval[inode];
+	      sdev -= w[j]*tmp*tmp;
+	    }
+	  }
+	}
 	val = ldev + sdev;
+	if (ifvar[iv] == 0) val += lambda;
 	Printf(" val %f\n", val);
 	if (val >= devtarget || val >= *bval) return;
 	*bval = val;
@@ -502,6 +525,8 @@ static void split_disc(int inode, int iv, double *bval)
 		    for (l = 0; l < nll; l++)
 			if (cprob[l] < fence) ysum += ys[l];
 		    ldev = y2 - ysum*ysum/cntl - (ytot-ysum)*(ytot-ysum)/cntr;
+		    if(oneside) ldev = y2 - ysum*ysum/cntl;
+		    if (ifvar[iv] == 0) ldev += lambda;
 		}
 /*  Printf("fence %f dev %f #l %g #r %g\n", fence, ldev, cntl, cntr); */
 		if (ldev < bdev) {
