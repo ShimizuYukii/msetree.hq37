@@ -21,7 +21,7 @@ BDRgrow1(double *pX, double *pY, double *pw, int *plevels, int *junk1,
 	 int *pnobs, int *pncol, int *pnode, int *pvar, char **pcutleft,
 	 char **pcutright, double *pn, double *pdev, double *pyval,
 	 double *pyprob, int *pminsize, int *pmincut, double *pmindev,
-	 int *pnnode, int *pwhere, int *pnmax, int *stype, int *pordered, int *poneside, double *lmd);
+	 int *pnnode, int *pwhere, int *pnmax, int *stype, int *pordered, int *poneside, double *lmd, int *fcut);
 
 
 void VR_dev1(int *nnode, int *nodes, int *parent,

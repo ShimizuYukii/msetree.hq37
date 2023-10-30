@@ -19,7 +19,7 @@ tree <-
 function(formula, data, weights, subset,
          na.action = na.pass, control = tree.control(nobs, ...),
          method = "recursive.partition",
-         split = c("deviance", "gini"), oneside=FALSE, penalty=0,
+         split = c("deviance", "gini"), oneside=FALSE, penalty=0, firstcut=-1,
          model = FALSE, x = FALSE, y = TRUE, wts = TRUE, ...)
 {
     if (is.data.frame(model)) {
@@ -28,7 +28,7 @@ function(formula, data, weights, subset,
     } else {
         m <- match.call(expand.dots = FALSE)
         m$method <- m$model <- m$control <- m$... <- m$x <- m$y <- m$wts <-
-            m$split <- m$oneside <- m$penalty <- NULL
+            m$split <- m$oneside <- m$penalty <- m$firstcut <- NULL
         m[[1L]] <- as.name("model.frame.default")
         m <- eval.parent(m)
         if(method == "model.frame") return(m)
@@ -91,6 +91,7 @@ function(formula, data, weights, subset,
               as.integer(sapply(m, is.ordered)),
               as.integer(oneside),
               as.double(penalty),
+              as.integer(firstcut),
               NAOK = TRUE)
     n <- fit$nnode
     frame <- data.frame(fit[c("var", "n", "dev", "yval")])[1L:n,  ]

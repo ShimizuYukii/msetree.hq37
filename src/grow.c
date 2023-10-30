@@ -53,7 +53,7 @@ static void scat(char *s, char c)
 
 static double *X, *y, *w, *dev, *yval, *yprob, mindev,  devtarget,
     *tvar, *cprob, *scprob, *tyc, *w1, lambda;
-static int  nobs, nvar, minsize, mincut, nnode, nmax,*twhere, *ttw, *ty, Gini, oneside ;
+static int  nobs, nvar, minsize, mincut, nnode, nmax,*twhere, *ttw, *ty, Gini, oneside, fsplit ;
 static int *levels, *node, *var, *where, *ordered,*ifvar;
 
 static char **cutleft, **cutright;
@@ -330,8 +330,12 @@ static void split_cont(int inode, int iv, double *bval)
     }
     bdev = bdev + sdev;
     Printf(" val %f, split %g\n", bdev, bsplit);
-    if (bdev >= *bval) return;
-    if (bdev >= devtarget) return;
+    if (fsplit < 0 || inode >0){
+      if (bdev >= *bval) return;
+      if (bdev >= devtarget) return;
+    } else {
+      if (iv != fsplit-1) return;
+    }
     *bval = bdev;
     var[inode] = iv + 1;
     ifvar[iv] = 1;
@@ -450,7 +454,12 @@ static void split_disc(int inode, int iv, double *bval)
 	val = ldev + sdev;
 	if (ifvar[iv] == 0) val += lambda;
 	Printf(" val %f\n", val);
-	if (val >= devtarget || val >= *bval) return;
+	    if (fsplit < 0 || inode >0){
+      if (val >= *bval) return;
+      if (val >= devtarget) return;
+    } else {
+      if (iv != fsplit-1) return;
+    }
 	*bval = val;
 	var[inode] = iv + 1;
 	labl = cutleft[inode];
@@ -536,7 +545,12 @@ static void split_disc(int inode, int iv, double *bval)
 	    }
 	    val = bdev + sdev;
 	    Printf(" val %f fence %f\n", val, bfence);
-	    if (val >= devtarget || val >= *bval) return;
+	    if (fsplit < 0 || inode >0){
+	      if (val >= *bval) return;
+	      if (val >= devtarget) return;
+	    } else {
+	      if (iv != fsplit-1) return;
+	    }
 	    *bval = val;
 	    var[inode] = iv + 1;
 	    labl = cutleft[inode];
@@ -608,7 +622,12 @@ static void split_disc(int inode, int iv, double *bval)
 	    }
 	    val = bdev + sdev;
 	    Printf(" val %f at bin val %d\n", val, iis);
-	    if (val >= *bval || val >= devtarget) return;
+	    if (fsplit < 0 || inode >0){
+	      if (val >= *bval) return;
+	      if (val >= devtarget) return;
+	    } else {
+	      if (iv != fsplit-1) return;
+	    }
 	    *bval = val;
 	    for(l = 1; l < nll; l++) {
 		indl[l] = (iis%2);
@@ -745,7 +764,7 @@ BDRgrow1(double *pX, double *pY, double *pw, int *plevels, int *junk1,
 	 int *pnobs, int *pncol, int *pnode, int *pvar, char **pcutleft,
 	 char **pcutright, double *pn, double *pdev, double *pyval,
 	 double *pyprob, int *pminsize, int *pmincut, double *pmindev,
-	 int *pnnode, int *pwhere, int *pnmax, int *stype, int *pordered, int *poneside, double *lmd)
+	 int *pnnode, int *pwhere, int *pnmax, int *stype, int *pordered, int *poneside, double *lmd, int *fcut)
 {
     int i, nl;
 
@@ -753,7 +772,7 @@ BDRgrow1(double *pX, double *pY, double *pw, int *plevels, int *junk1,
     nobs = *pnobs; nvar = *pncol;
     levels = plevels; node = pnode; var = pvar; n = pn; mindev = *pmindev;
     minsize = *pminsize; mincut = *pmincut; nmax = *pnmax; nnode = *pnnode;
-    where = pwhere; cutleft = pcutleft; cutright = pcutright; oneside=*poneside; lambda=*lmd;
+    where = pwhere; cutleft = pcutleft; cutright = pcutright; oneside=*poneside; lambda=*lmd; fsplit=*fcut;
     ordered= pordered; Gini = *stype;
     nc = levels[nvar]; ifvar = (int *) S_alloc(nvar, sizeof(int));
     Printf("nnode: %d\n", nnode);

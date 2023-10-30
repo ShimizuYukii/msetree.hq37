@@ -8,7 +8,7 @@
 tree(formula, data, weights, subset,
      na.action = na.pass, control = tree.control(nobs, ...),
      method = "recursive.partition",
-     split = c("deviance", "gini"), oneside = FALSE, penalty = 0,
+     split = c("deviance", "gini"), oneside = FALSE, penalty = 0, firstcut=-1,
      model = FALSE, x = FALSE, y = TRUE, wts = TRUE, ...)
 }
 \alias{tree}
@@ -44,6 +44,7 @@ tree(formula, data, weights, subset,
   \item{split}{Splitting criterion to use.}
   \item{oneside}{Decide whther it's optimized for only one side}
   \item{penalty}{Penalty to new variables}
+  \item{firstcut}{First split}
   \item{model}{If this argument is itself a model frame, then the
     \code{formula} and \code{data} arguments are ignored, and
     \code{model} is used to define the model.  If the argument is
