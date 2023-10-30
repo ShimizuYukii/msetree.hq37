@@ -28,7 +28,7 @@ function(formula, data, weights, subset,
     } else {
         m <- match.call(expand.dots = FALSE)
         m$method <- m$model <- m$control <- m$... <- m$x <- m$y <- m$wts <-
-            m$split <- NULL
+            m$split <- m$oneside <- m$penalty <- NULL
         m[[1L]] <- as.name("model.frame.default")
         m <- eval.parent(m)
         if(method == "model.frame") return(m)
