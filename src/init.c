@@ -26,7 +26,7 @@
 #define CDEF(name, n)  {#name, (DL_FUNC) &name, n}
 
 static const R_CMethodDef CEntries[]  = {
-    CDEF(BDRgrow1, 23),
+    CDEF(BDRgrow1, 25),
     CDEF(VR_dev1, 12),
     CDEF(VR_dev2, 10),
     CDEF(VR_dev3, 10),

@@ -16,39 +16,39 @@
  */
 
 #include <R.h>
-void 
-BDRgrow1(double *pX, double *pY, double *pw, int *plevels, int *junk1, 
-	 int *pnobs, int *pncol, int *pnode, int *pvar, char **pcutleft, 
-	 char **pcutright, double *pn, double *pdev, double *pyval, 
-	 double *pyprob, int *pminsize, int *pmincut, double *pmindev, 
-	 int *pnnode, int *pwhere, int *pnmax, int *stype, int *pordered);
+void
+BDRgrow1(double *pX, double *pY, double *pw, int *plevels, int *junk1,
+	 int *pnobs, int *pncol, int *pnode, int *pvar, char **pcutleft,
+	 char **pcutright, double *pn, double *pdev, double *pyval,
+	 double *pyprob, int *pminsize, int *pmincut, double *pmindev,
+	 int *pnnode, int *pwhere, int *pnmax, int *stype, int *pordered, int *poneside, double *lmd);
 
 
-void VR_dev1(int *nnode, int *nodes, int *parent, 
+void VR_dev1(int *nnode, int *nodes, int *parent,
 	     double *dev, double *sdev,
 	     int *y, int *ny, int *yf, int *where, double *wt,
 	     int *nc, double *loss);
 
-void VR_dev2(int *nnode, int *nodes, int *parent, 
+void VR_dev2(int *nnode, int *nodes, int *parent,
 	     double *dev, double *sdev,
 	     int *y, int *ny, double *yprob, int* where, double *wt);
 
-void VR_dev3(int *nnode, int *nodes, int *parent, 
+void VR_dev3(int *nnode, int *nodes, int *parent,
 	     double *dev, double *sdev,
 	     double *y, int *ny, double *yf, int* where, double *wt);
 
-void    
+void
 VR_prune2(int *nnode, int *nodes, int *leaf, double *dev, double *sdev,
 	  double *ndev, double *nsdev, int *keep, int *ord, double *g,
 	  int *size, double *cdev, double *alph, int *inodes, int *tsize,
 	  double *tdev, double *ntdev);
 
-void    
+void
 VR_pred1(double *x, int *vars, char **lsplit, char **rsplit,
 	 int *nlevels, int *nodes, int *fn, int *nnode,
 	 int *nr, int *nc, int *where);
 
-void    
+void
 VR_pred2(double *px, int *pvars, char **plsplit, char **prsplit,
 	 int *pnlevels, int *pnodes, int *fn, int *pnnode,
 	 int *nr, double *pwhere);

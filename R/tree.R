@@ -19,7 +19,7 @@ tree <-
 function(formula, data, weights, subset,
          na.action = na.pass, control = tree.control(nobs, ...),
          method = "recursive.partition",
-         split = c("deviance", "gini", "mse"), oneside=FALSE, penalty=0,
+         split = c("deviance", "gini"), oneside=FALSE, penalty=0,
          model = FALSE, x = FALSE, y = TRUE, wts = TRUE, ...)
 {
     if (is.data.frame(model)) {
@@ -88,7 +88,6 @@ function(formula, data, weights, subset,
               where = integer(nobs),
               as.integer(control$nmax),
               as.integer(split=="gini"),
-              as.integer(split=="mse"),
               as.integer(sapply(m, is.ordered)),
               as.integer(oneside),
               as.double(penalty),
