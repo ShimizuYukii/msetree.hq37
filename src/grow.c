@@ -28,7 +28,7 @@
 #define _(String) (String)
 #endif
 
-static double XLOGX(double x) 
+static double XLOGX(double x)
 {
     return (x > 0)?x*log(x):0;
 }
@@ -52,9 +52,9 @@ static void scat(char *s, char c)
 }
 
 static double *X, *y, *w, *dev, *yval, *yprob, mindev,  devtarget,
-    *tvar, *cprob, *scprob, *tyc, *w1;
-static int  nobs, nvar, minsize, mincut, nnode, nmax,*twhere, *ttw, *ty, Gini;
-static int *levels, *node, *var, *where, *ordered;
+    *tvar, *cprob, *scprob, *tyc, *w1, lambda;
+static int  nobs, nvar, minsize, mincut, nnode, nmax,*twhere, *ttw, *ty, Gini, oneside ;
+static int *levels, *node, *var, *where, *ordered,*ifvar;
 
 static char **cutleft, **cutright;
 static int nc, *indl, *indr, *ind, exists, offset, maxnl;
@@ -85,7 +85,7 @@ static void fillin_node(int inode)
 	n[inode] = n1;
 	yparent = -1;
 	if (inode > 0) {
-	    for(j = 0; j < inode; j++) 
+	    for(j = 0; j < inode; j++)
 		if(node[j] == node[inode]/2) yparent = (int)(y[j] - 1);
 	}
 	nl = 0;
@@ -111,8 +111,8 @@ static void fillin_node(int inode)
 	if(inode >= exists + offset) yval[inode] = nl;
 	sum = 0.0;
 	for (j = 0; j < nobs; j++)
-	    if (where[j] == inode)
-		sum += w[j] * log(yprob[nc * inode + (int) y[j] - 1]);
+	    if (!oneside && where[j] == inode) sum += w[j] * log(yprob[nc * inode + (int) y[j] - 1]);
+	    if (oneside && where[j] == 1) sum += w[j] * log(yprob[nc * inode + (int) y[j] - 1]);
 	dev[inode] = -2 * sum;
     }
     else {
@@ -128,7 +128,8 @@ static void fillin_node(int inode)
 	yval[inode] = t;
 	sum = 0.0;
 	for (j = 0; j < nobs; j++)
-	    if (where[j] == inode) sum +=  w[j] * (y[j] - t) * (y[j] - t);
+	  if (!oneside && where[j] == inode) sum +=  w[j] * (y[j] - t) * (y[j] - t);
+	  if (oneside && where[j] == 1) sum +=  w[j] * (y[j] - t) * (y[j] - t);
 	dev[inode] = sum;
     }
 }
@@ -183,7 +184,7 @@ static void split_cont(int inode, int iv, double *bval)
     totw = 0.0;
     for (j = 0; j < nobs; j++)
 	if (where[j] == inode) {
-	    tmp = X[j + nobs * iv]; 
+	    tmp = X[j + nobs * iv];
 	    if (!ISNA(tmp)) {
 		if (nc) ty[ns] = (int)(y[j] - 1);
 		else tyc[ns] = y[j];
@@ -198,7 +199,7 @@ static void split_cont(int inode, int iv, double *bval)
 		}
 	    }
 	}
-    if ( Gini && sdev > 0) 
+    if ( Gini && sdev > 0)
 	error(_("cannot use 'Gini' with missing values"));
     Printf(" count %d", ns);
     if ( ns < 2 || totw < EPS ) { Printf("\n"); return;}
@@ -309,6 +310,7 @@ static void split_cont(int inode, int iv, double *bval)
 	    ldev = y2 - ysum*ysum/cntl - (ytot-ysum)*(ytot-ysum)/(totw-cntl);
 	}
 /*  Printf("split %g dev %g counts %g %g\n", split, ldev, cntl, totw-cntl);*/
+  if (ifvar[iv] == 0) ldev += lambda;
 	if (ldev < bdev) {
 	    bdev = ldev;
 	    bsplit = split;
@@ -320,6 +322,7 @@ static void split_cont(int inode, int iv, double *bval)
     if (bdev >= devtarget) return;
     *bval = bdev;
     var[inode] = iv + 1;
+    ifvar[iv] = 1;
     snprintf(cutleft[inode], 100, "<%g", bsplit);
     snprintf(cutright[inode], 100, ">%g", bsplit);
     for (j = 0; j < nobs; j++)
@@ -330,15 +333,15 @@ static void split_cont(int inode, int iv, double *bval)
 	} else ttw[j] = -1;
 }
 
-static char lb[32] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 
-		      'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 
-		      'u', 'v', 'w', 'x', 'y', 'z', 
+static char lb[32] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+		      'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+		      'u', 'v', 'w', 'x', 'y', 'z',
 		      '0', '1', '2', '3', '4', '5'};
 
 static void split_disc(int inode, int iv, double *bval)
 {
     int     i, ii, iis, j, k, l, mi, nl = levels[iv], nll;
-    double  bdev, ldev, sdev, val, fence, bfence, cntl, 
+    double  bdev, ldev, sdev, val, fence, bfence, cntl,
 	cntr, cntl1, cntr1, tmp, ysum, ytot, y2;
     char    *labl, *labr;
 
@@ -360,7 +363,7 @@ static void split_disc(int inode, int iv, double *bval)
 		if (w[j] > 0) ind[twhere[j]] = True;
 	    }
 	} else twhere[j] = -1;
-    if ( Gini && sdev > 0) 
+    if ( Gini && sdev > 0)
 	error(_("cannot use 'Gini' with missing values"));
     ytot = y2 = 0.0;
     nll = 0;
@@ -391,7 +394,7 @@ static void split_disc(int inode, int iv, double *bval)
     /* remove empty levels */
     for (l = 0; l < nll; l++) {
 	cnt[l] = cnt[ind[l]];
-	if (nc) for (k = 0; k < nc; k++) 
+	if (nc) for (k = 0; k < nc; k++)
 	    tab[k + nc * l] = tab[k + nc * ind[l]];
 	else ys[l] = ys[ind[l]];
     }
@@ -500,7 +503,7 @@ static void split_disc(int inode, int iv, double *bval)
 			if (cprob[l] < fence) ysum += ys[l];
 		    ldev = y2 - ysum*ysum/cntl - (ytot-ysum)*(ytot-ysum)/cntr;
 		}
-/*  Printf("fence %f dev %f #l %g #r %g\n", fence, ldev, cntl, cntr); */ 
+/*  Printf("fence %f dev %f #l %g #r %g\n", fence, ldev, cntl, cntr); */
 		if (ldev < bdev) {
 		    bdev = ldev;
 		    bfence = fence;
@@ -530,7 +533,7 @@ static void split_disc(int inode, int iv, double *bval)
 	} else {
 
 	    Printf(" cnts "); for(l = 0; l < nll; l++) Printf(" %g", cnt[l]);
-	    Printf("\n"); 
+	    Printf("\n");
 	    indl[0] = True;
 	    for (l = 1; l < nll; l++) indl[l] = False;
 	    bdev = devtarget;
@@ -572,6 +575,7 @@ static void split_disc(int inode, int iv, double *bval)
 		ldev *= 2;
 /*	     for(l = 0; l < nll; l++) Printf("%d ", indl[l]);
 	     Printf(": %d %f\n", i, ldev); */
+    if (ifvar[iv] == 0) ldev += lambda;
 		if (ldev < bdev) {
 		    bdev = ldev;
 		    iis = i;
@@ -586,6 +590,7 @@ static void split_disc(int inode, int iv, double *bval)
 		iis /= 2;
 	    }
 	    var[inode] = iv + 1;
+	    ifvar[iv] = 1;
 	    labl = cutleft[inode];
 	    labr = cutright[inode];
 	    strcpy(labl, ":");
@@ -609,7 +614,7 @@ static void shift_up_node(int i, int N)
     var[i+N] = var[i];
     cutleft[i+N] = cutleft[i];
     cutright[i+N] = cutright[i];
-/*    Printf("(%d) %d to %d %s %s %p\n", node[i], i, i+N, cutleft[i+N], 
+/*    Printf("(%d) %d to %d %s %s %p\n", node[i], i, i+N, cutleft[i+N],
       cutright[i+N], *(cutleft+i+N));*/
     n[i+N] = n[i];
     dev[i+N] = dev[i];
@@ -630,10 +635,10 @@ static void shift_down_node(int i, int N)
     dev[i] = dev[i+N];
     yval[i] = yval[i+N];
     node[i] = node[i+N];
-/*    Printf("(%d) %d to %d %s %s %p\n", node[i], i+N, i, cutleft[i], 
+/*    Printf("(%d) %d to %d %s %s %p\n", node[i], i+N, i, cutleft[i],
       cutright[i], *(cutleft+i)); */
     for (k = 0; k < nc; k++) yprob[i*nc+k] = yprob[(i+N)*nc+k];
-    for (j = 0; j < nobs; j++) if (where[j] == i+N) where[j] -=N; 
+    for (j = 0; j < nobs; j++) if (where[j] == i+N) where[j] -=N;
 }
 
 static void divide_node(int inode)
@@ -661,7 +666,7 @@ static void divide_node(int inode)
 	devtarget = dev[inode] - mindev*dev[0];
     }
     if(devtarget <= (1e-6)*dev[0]) return;
-    Printf("\n--evaluating node %d(%d) size %g\n", inode, 
+    Printf("\n--evaluating node %d(%d) size %g\n", inode,
 	   (int)node[inode], n[inode]);
 
     for (iv = 0; iv < nvar; iv++)
@@ -671,14 +676,14 @@ static void divide_node(int inode)
 	    split_cont(inode, iv, &bval);
 
     Printf("..best value is %g\n", bval);
-   
+
     if (bval < devtarget) {
         Printf("..splitting\n");
 	if ( node[inode] >=  1073741824 ) {
 	    error(_("maximum depth reached\n"));
 	    return;
 	}
-   
+
 	if (inode < nnode-1) {
 	    shifted = nnode;
 	    for (i= nnode-1; i > inode; i--) shift_up_node(i, nmax-nnode);
@@ -701,7 +706,7 @@ static void divide_node(int inode)
 	Printf("..done right at %d\n", inode);
 	if (shifted) {
 	    shift = nnode - inode -1;
-	    for (i = inode+1; i < shifted; i++) 
+	    for (i = inode+1; i < shifted; i++)
 		shift_down_node(i+shift, nmax-shifted-shift);
 	    offset += shift;
 	    nnode = shifted + shift;
@@ -710,12 +715,12 @@ static void divide_node(int inode)
     }
 }
 
-void 
-BDRgrow1(double *pX, double *pY, double *pw, int *plevels, int *junk1, 
-	 int *pnobs, int *pncol, int *pnode, int *pvar, char **pcutleft, 
-	 char **pcutright, double *pn, double *pdev, double *pyval, 
-	 double *pyprob, int *pminsize, int *pmincut, double *pmindev, 
-	 int *pnnode, int *pwhere, int *pnmax, int *stype, int *pordered)
+void
+BDRgrow1(double *pX, double *pY, double *pw, int *plevels, int *junk1,
+	 int *pnobs, int *pncol, int *pnode, int *pvar, char **pcutleft,
+	 char **pcutright, double *pn, double *pdev, double *pyval,
+	 double *pyprob, int *pminsize, int *pmincut, double *pmindev,
+	 int *pnnode, int *pwhere, int *pnmax, int *stype, int *pordered, int *poneside, double *lmd)
 {
     int i, nl;
 
@@ -723,12 +728,13 @@ BDRgrow1(double *pX, double *pY, double *pw, int *plevels, int *junk1,
     nobs = *pnobs; nvar = *pncol;
     levels = plevels; node = pnode; var = pvar; n = pn; mindev = *pmindev;
     minsize = *pminsize; mincut = *pmincut; nmax = *pnmax; nnode = *pnnode;
-    where = pwhere; cutleft = pcutleft; cutright = pcutright; 
+    where = pwhere; cutleft = pcutleft; cutright = pcutright; oneside=*poneside; lambda=*lmd;
     ordered= pordered; Gini = *stype;
-    nc = levels[nvar];
+    nc = levels[nvar]; ifvar = (int *) S_alloc(nvar, sizeof(int));
     Printf("nnode: %d\n", nnode);
     Printf("nvar: %d\n", nvar);
     for(i = 0; i <= nvar; i++) Printf("%d ", (int)levels[i]);
+    for(i = 0; i < nvar; i++) ifvar[i] = 0;
     Printf("\n");
     /* allocate scratch storage */
     nl = 0;
@@ -779,4 +785,3 @@ BDRgrow1(double *pX, double *pY, double *pw, int *plevels, int *junk1,
     *pnnode = nnode;
     Printf("Finished!\n");
 }
-

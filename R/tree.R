@@ -19,7 +19,7 @@ tree <-
 function(formula, data, weights, subset,
          na.action = na.pass, control = tree.control(nobs, ...),
          method = "recursive.partition",
-         split = c("deviance", "gini"),
+         split = c("deviance", "gini", "mse"), oneside=FALSE, penalty=0,
          model = FALSE, x = FALSE, y = TRUE, wts = TRUE, ...)
 {
     if (is.data.frame(model)) {
@@ -33,7 +33,6 @@ function(formula, data, weights, subset,
         m <- eval.parent(m)
         if(method == "model.frame") return(m)
     }
-    split <- match.arg(split)
     Terms <- attr(m, "terms")
     if(any(attr(Terms, "order") > 1))
         stop("trees cannot handle interaction terms")
@@ -89,7 +88,10 @@ function(formula, data, weights, subset,
               where = integer(nobs),
               as.integer(control$nmax),
               as.integer(split=="gini"),
+              as.integer(split=="mse"),
               as.integer(sapply(m, is.ordered)),
+              as.integer(oneside),
+              as.double(penalty),
               NAOK = TRUE)
     n <- fit$nnode
     frame <- data.frame(fit[c("var", "n", "dev", "yval")])[1L:n,  ]

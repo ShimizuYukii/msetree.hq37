@@ -1,6 +1,8 @@
 Library tree
 ============
 
+Modified by Haocheng for STAT521
+
 Version 1.0-43  2023-01-31
 
 Make example(prune.tree) less tricksy
@@ -85,7 +87,7 @@ Use integer constants.
 Tweaks in man/na.tree.replace.Rd, man/tile.tree.Rd, man/tree.control.Rd
 Use R_atof.
 Add reference results in tests/Examples.
-	
+
 Version 1.0-26  2007-07-27
 
 Typos in man/deviance.tree.Rd and man/tile.tree.Rd.

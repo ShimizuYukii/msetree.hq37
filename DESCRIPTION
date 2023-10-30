@@ -1,12 +1,14 @@
 Package: tree
-Title: Classification and Regression Trees
+Title: Classification and Regression Trees (MOdified by Haocheng)
 Version: 1.0-43
-Date: 2023-01-31
+Date: 2023-10-26
 Depends: R (>= 3.6.0), grDevices, graphics, stats
 Suggests: MASS
-Authors@R: person("Brian", "Ripley", role = c("aut", "cre"),
-                  email = "ripley@stats.ox.ac.uk")
-Description: Classification and regression trees.
+Authors@R: c(person("Brian", "Ripley", role = c("aut", "cre"),
+                  email = "ripley@stats.ox.ac.uk"),
+             person("Haocheng", "Qin", role = c("ctb"),
+                  email = "hq37@duke.edu"))
+Description: Classification and regression trees, modified with MSE loss.
 License: GPL-2 | GPL-3
 NeedsCompilation: yes
 Packaged: 2023-01-31 10:41:30 UTC; ripley
